@@ -437,18 +437,31 @@ async function saveTransaction() {
         recurring: document.getElementById('tx-recurring').value
     };
 
-    if (currentTransactionType === 'transfer') {
-        transaction.toAccountId = document.getElementById('tx-to-account').value;
-    } else {
+    // --- START: New Balance Update Logic ---
+    const fromAccount = getAccount(transaction.accountId);
+
+    if (transaction.type === 'expense') {
+        if(fromAccount) fromAccount.balance -= transaction.amount;
+        transaction.categoryId = document.getElementById('tx-category').value;
+    } 
+    else if (transaction.type === 'income') {
+        if(fromAccount) fromAccount.balance += transaction.amount;
         transaction.categoryId = document.getElementById('tx-category').value;
     }
+    else if (transaction.type === 'transfer') {
+        transaction.toAccountId = document.getElementById('tx-to-account').value;
+        const toAccount = getAccount(transaction.toAccountId);
+        if(fromAccount) fromAccount.balance -= transaction.amount;
+        if(toAccount) toAccount.balance += transaction.amount;
+    }
+    // --- END: New Balance Update Logic ---
 
     appData.transactions.push(transaction);
     await saveData();
     closeModals();
-    renderTransactions();
+    renderTransactions(); // This will now show the correct data
+    renderAccounts(); // Also re-render accounts to be safe
 }
-
 async function saveAccount() {
     const account = {
         id: generateId(),
@@ -688,16 +701,31 @@ function renderTransactions() {
 }
 
 function createTransactionItem(tx) {
-    const category = getCategory(tx.categoryId, tx.type);
-    const account = getAccount(tx.accountId);
     const item = document.createElement('div');
     item.className = 'transaction-item';
+
+    let desc, meta, categoryIcon = '';
+
+    if (tx.type === 'transfer') {
+        const fromAccount = getAccount(tx.accountId);
+        const toAccount = getAccount(tx.toAccountId);
+        desc = `Transfer to ${toAccount?.name || 'Unknown'}`;
+        meta = `From: ${fromAccount?.name || 'Unknown'}`;
+        categoryIcon = '🔁';
+    } else {
+        const category = getCategory(tx.categoryId, tx.type);
+        const account = getAccount(tx.accountId);
+        desc = tx.description || 'No description';
+        meta = `${category?.name || 'Uncategorized'} • ${account?.name || 'Unknown Account'}`;
+        categoryIcon = category?.icon || '';
+    }
+
     item.innerHTML = `
         <div class="transaction-info">
-            <div class="transaction-desc">${category?.icon || ''} ${tx.description || 'No description'}</div>
-            <div class="transaction-meta">${category?.name || 'Uncategorized'} • ${account?.name || 'Unknown Account'}</div>
+            <div class="transaction-desc">${categoryIcon} ${desc}</div>
+            <div class="transaction-meta">${meta}</div>
         </div>
-        <div class="transaction-amount ${tx.type}">${formatCurrency(tx.amount)}</div>
+        <div class="transaction-amount ${tx.type}">${tx.type === 'expense' ? '-' : ''}${formatCurrency(tx.amount)}</div>
     `;
     return item;
 }
