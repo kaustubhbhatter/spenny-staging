@@ -621,6 +621,7 @@ function createTransactionItem(tx) {
 }
 
 function renderAccounts() {
+    // Overall financial summary (this part remains the same)
     let assets = 0, liabilities = 0;
     appData.accounts.forEach(acc => {
         if (acc.includeInTotal) {
@@ -633,18 +634,49 @@ function renderAccounts() {
     document.getElementById('total-liabilities').textContent = formatCurrency(liabilities);
     document.getElementById('net-worth').textContent = formatCurrency(assets - liabilities);
 
+    // --- START: New Grouping and Rendering Logic ---
     const listEl = document.getElementById('accounts-list');
     listEl.innerHTML = '';
-    appData.accounts.forEach(acc => {
-        const item = document.createElement('div');
-        item.className = 'account-item';
-        const balanceClass = acc.balance >= 0 ? 'positive' : 'negative';
-        item.innerHTML = `
-            <div class="account-info"><h3>${acc.name}</h3><p>${acc.type}</p></div>
-            <div class="account-balance ${balanceClass}">${formatCurrency(Math.abs(acc.balance))}</div>
+
+    // Step 1: Group accounts by their type
+    const groupedAccounts = appData.accounts.reduce((groups, account) => {
+        const type = account.type || 'Uncategorized';
+        if (!groups[type]) {
+            groups[type] = [];
+        }
+        groups[type].push(account);
+        return groups;
+    }, {});
+
+    // Step 2: Render each group
+    Object.keys(groupedAccounts).forEach(type => {
+        const accountsInGroup = groupedAccounts[type];
+        
+        // Calculate the subtotal for the group
+        const groupTotal = accountsInGroup.reduce((sum, acc) => sum + acc.balance, 0);
+
+        // Create and append the group header
+        const groupHeader = document.createElement('div');
+        groupHeader.className = 'account-group-header';
+        groupHeader.innerHTML = `
+            <span class="group-name">${type}</span>
+            <span class="group-total">${formatCurrency(groupTotal)}</span>
         `;
-        listEl.appendChild(item);
+        listEl.appendChild(groupHeader);
+        
+        // Render each account within the group
+        accountsInGroup.forEach(acc => {
+            const item = document.createElement('div');
+            item.className = 'account-item';
+            const balanceClass = acc.balance >= 0 ? 'positive' : 'negative';
+            item.innerHTML = `
+                <div class="account-info"><h3>${acc.name}</h3></div>
+                <div class="account-balance ${balanceClass}">${formatCurrency(acc.balance)}</div>
+            `;
+            listEl.appendChild(item);
+        });
     });
+    // --- END: New Grouping and Rendering Logic ---
 }
 
 function renderAnalytics() {
