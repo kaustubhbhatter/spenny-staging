@@ -507,20 +507,46 @@ function renderTransactions() {
         return;
     }
 
+    // New code
     Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a)).forEach(date => {
         const dayGroup = document.createElement('div');
         dayGroup.className = 'day-group';
+
+        // Set the date header
         const dateObj = new Date(date);
         const dayName = getDayName(dateObj);
         const header = document.createElement('div');
         header.className = 'day-header';
         header.textContent = dayName;
         dayGroup.appendChild(header);
-        listEl.appendChild(dayGroup);
+
+        // --- START: Added Logic ---
+        // Calculate totals for the day
+        let dailyIncome = 0;
+        let dailyExpense = 0;
+        grouped[date].forEach(tx => {
+            if (tx.type === 'income') dailyIncome += tx.amount;
+            if (tx.type === 'expense') dailyExpense += tx.amount;
+        });
+
+        // Create and append the summary element
+        const summaryEl = document.createElement('div');
+        summaryEl.className = 'day-summary';
+        summaryEl.innerHTML = `
+            <span class="income">In: ${formatCurrency(dailyIncome)}</span>
+            <span class="expense">Out: ${formatCurrency(dailyExpense)}</span>
+            <span class="net">Net: ${formatCurrency(dailyIncome - dailyExpense)}</span>
+        `;
+        dayGroup.appendChild(summaryEl);
+        // --- END: Added Logic ---
+
+        // Append the individual transaction items
         grouped[date].forEach(tx => {
             const item = createTransactionItem(tx);
             dayGroup.appendChild(item);
         });
+
+        listEl.appendChild(dayGroup);
     });
 }
 
