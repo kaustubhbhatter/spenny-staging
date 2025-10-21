@@ -950,19 +950,30 @@ body {
     border-left-color: var(--color-primary);
 }
 
+.summary-card.income,
 .summary-card.assets {
-    background: var(--color-success);
-    color: var(--color-btn-primary-text);
+    border-left-color: var(--color-success);
 }
 
+.summary-card.expense,
 .summary-card.liabilities {
-    background: var(--color-error);
-    color: var(--color-btn-primary-text);
+    border-left-color: var(--color-error);
 }
 
+.summary-card.net,
 .summary-card.networth {
-    background: var(--color-primary);
-    color: var(--color-btn-primary-text);
+    border-left-color: var(--color-primary);
+}
+
+/* Add these new rules to color the amount text correctly for the accounts page */
+.summary-card.assets .amount {
+    color: var(--color-success);
+}
+.summary-card.liabilities .amount {
+    color: var(--color-error);
+}
+.summary-card.networth .amount {
+    color: var(--color-primary);
 }
 
 .summary-card .label {
@@ -1090,6 +1101,27 @@ body {
     margin: var(--space-20) 0;
 }
 
+.account-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-8) var(--space-12);
+    margin-top: var(--space-20);
+    background: var(--color-secondary);
+    border-radius: var(--radius-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+}
+
+.account-group-header .group-name {
+    font-size: var(--font-size-lg);
+}
+
+.account-group-header .group-total {
+    font-size: var(--font-size-lg);
+}
+/* END: Add new styles */
+
 .account-item {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -1101,13 +1133,8 @@ body {
 }
 
 .account-info h3 {
-    margin-bottom: var(--space-6);
+    margin-bottom: 0;
     color: var(--color-text);
-}
-
-.account-info p {
-    font-size: var(--font-size-base);
-    color: var(--color-text-secondary);
 }
 
 .account-balance {
