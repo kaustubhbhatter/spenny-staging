@@ -836,8 +836,11 @@ function createTransactionItem(tx) {
     }
 
     item.innerHTML = `
-        <div class="transaction-info">...</div>
-        <div class="transaction-amount ${tx.type}">...</div>
+        <div class="transaction-info">
+            <div class="transaction-desc">${categoryIcon} ${desc}</div>
+            <div class="transaction-meta">${meta}</div>
+        </div>
+        <div class="transaction-amount ${tx.type}">${tx.type === 'expense' ? '-' : ''}${formatCurrency(tx.amount)}</div>
         <button class="edit-btn" data-id="${tx.id}">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
         </button>
@@ -865,15 +868,13 @@ function renderAccounts() {
                 lastBillingDate.setMonth(lastBillingDate.getMonth() - 1);
             }
             
-            // Calculate outstanding charges (new expenses since last bill)
             let outstandingBalance = 0;
             appData.transactions.forEach(tx => {
-                if (tx.accountId === acc.id && new Date(tx.date) > lastBillingDate) {
+                if (tx.accountId === acc.id && tx.type === 'expense' && new Date(tx.date) > lastBillingDate) {
                     outstandingBalance -= tx.amount;
                 }
             });
 
-            // Balance Payable is the total balance MINUS the new charges.
             const balancePayable = acc.balance - outstandingBalance;
             
             if (acc.balance > 0) assets += acc.balance;
@@ -923,7 +924,6 @@ function renderAccounts() {
 
                 let outstandingBalance = 0;
                 appData.transactions.forEach(tx => {
-                    // Only count expenses on this card that are after the last billing date
                     if (tx.accountId === acc.id && tx.type === 'expense' && new Date(tx.date) > lastBillingDate) {
                         outstandingBalance -= tx.amount;
                     }
@@ -936,21 +936,21 @@ function renderAccounts() {
                     <div class="credit-card-details">
                         <div class="balance-line">
                             <span class="label">Balance Payable</span>
-                            <span class="amount ${balancePayable <= 0 ? 'negative' : 'positive'}">${formatCurrency(balancePayable)}</span>
+                            <span class="amount ${balancePayable < 0 ? 'negative' : 'positive'}">${formatCurrency(balancePayable)}</span>
                         </div>
                         <div class="balance-line">
                             <span class="label">Outstanding Balance</span>
-                            <span class="amount ${outstandingBalance <= 0 ? 'negative' : 'positive'}">${formatCurrency(outstandingBalance)}</span>
+                            <span class="amount ${outstandingBalance < 0 ? 'negative' : 'positive'}">${formatCurrency(outstandingBalance)}</span>
                         </div>
                     </div>
-                    <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                     ${balancePayable < 0 ? `<button class="pay-now-btn" data-card-id="${acc.id}" data-amount="${Math.abs(balancePayable)}">Pay Now</button>` : ''}
+                    <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                 `;
             } else {
                 item.innerHTML = `
                     <div class="account-info"><h3>${acc.name}</h3></div>
-                    <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                     <div class="account-balance ${balanceClass}">${formatCurrency(acc.balance)}</div>
+                    <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                 `;
             }
             listEl.appendChild(item);
@@ -1041,7 +1041,6 @@ function renderCategoriesList(type) {
         tag.className = 'category-tag';
         tag.style.backgroundColor = cat.color + '20';
         tag.style.color = cat.color;
-        tag.textContent = `${cat.icon} ${cat.name}`;
         tag.innerHTML = `
             ${cat.icon} ${cat.name}
             <button class="edit-btn" data-id="${cat.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
@@ -1058,9 +1057,8 @@ function renderAccountTypesList() {
         tag.className = 'category-tag';
         tag.style.backgroundColor = type.color + '20';
         tag.style.color = type.color;
-        tag.textContent = `${type.icon} ${type.name}`;
         tag.innerHTML = `
-            ${cat.icon} ${cat.name}
+            ${type.icon} ${type.name}
             <button class="edit-btn" data-id="${type.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
         `;
         listEl.appendChild(tag);
