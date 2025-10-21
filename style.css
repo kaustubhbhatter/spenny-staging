@@ -1281,6 +1281,85 @@ body {
     font-weight: var(--font-weight-semibold);
 }
 
+/* START: New Theme & Edit Button Styles */
+
+/* 1. New Brownish-Red Theme for Header */
+.app-header {
+    background: #8B4513; /* A nice SaddleBrown color */
+    border-color: #6A360F;
+}
+
+.app-header h1, .app-header #user-email {
+    color: var(--color-cream-50);
+}
+
+.app-header .btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-cream-50);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.app-header .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* 2. Edit Button Styles */
+.edit-btn {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--color-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    justify-content: center;
+    align-items: center;
+    opacity: 0.7;
+    transition: opacity 150ms ease;
+}
+
+.edit-btn:hover {
+    opacity: 1;
+    background: var(--color-primary);
+}
+
+.edit-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--color-text);
+}
+
+.edit-btn:hover svg {
+    stroke: var(--color-btn-primary-text);
+}
+
+/* Make parent elements relative to position the edit button */
+.transaction-item, .account-item, .category-tag {
+    position: relative;
+}
+
+/* Show edit button on hover */
+.transaction-item:hover .edit-btn,
+.account-item:hover .edit-btn,
+.category-tag:hover .edit-btn {
+    display: inline-flex;
+}
+
+/* 3. Checkbox Label Fix */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+}
+.checkbox-label input {
+    width: auto; /* Allow checkbox to size itself */
+}
+
+/* END: New Styles */
+
 #expense-categories-list,
 #income-categories-list,
 #account-types-list {
