@@ -13,7 +13,7 @@ const firebaseConfig = {
 // We declare Firebase services here but will initialize them later.
 let auth, db; 
 let currentUser = null;
-let currentMonth = new Date();
+let currentMonth = new new Date();
 let currentTransactionType = 'expense';
 let charts = {};
 
@@ -22,21 +22,21 @@ const defaultAppData = {
     transactions: [],
     accounts: [],
     expenseCategories: [
-        { id: 'exp1', name: 'Food & Dining', color: '#F44336', icon: '🍽️' },
-        { id: 'exp2', name: 'Transportation', color: '#2196F3', icon: '🚗' },
-        { id: 'exp3', name: 'Shopping', color: '#E91E63', icon: '🛍️' },
-        { id: 'exp4', name: 'Bills & Utilities', color: '#FF9800', icon: '💡' }
+        { id: 'exp1', name: 'Food & Dining', color: '#F44336', icon: 'ðŸ½ï¸' },
+        { id: 'exp2', name: 'Transportation', color: '#2196F3', icon: 'ðŸš—' },
+        { id: 'exp3', name: 'Shopping', color: '#E91E63', icon: 'ðŸ›ï¸' },
+        { id: 'exp4', name: 'Bills & Utilities', color: '#FF9800', icon: 'ðŸ’¡' }
     ],
     incomeCategories: [
-        { id: 'inc1', name: 'Salary', color: '#4CAF50', icon: '💼' },
-        { id: 'inc2', name: 'Business', color: '#2196F3', icon: '🏢' }
+        { id: 'inc1', name: 'Salary', color: '#4CAF50', icon: 'ðŸ’¼' },
+        { id: 'inc2', name: 'Business', color: '#2196F3', icon: 'ðŸ¢' }
     ],
     accountTypes: [
-        { id: 'type1', name: 'Bank Account', icon: '🏦', color: '#4CAF50' },
-        { id: 'type2', name: 'Credit Card', icon: '💳', color: '#F44336' },
-        { id: 'type3', name: 'Cash', icon: '💵', color: '#FF9800' }
+        { id: 'type1', name: 'Bank Account', icon: 'ðŸ¦', color: '#4CAF50' },
+        { id: 'type2', name: 'Credit Card', icon: 'ðŸ’³', color: '#F44336' },
+        { id: 'type3', name: 'Cash', icon: 'ðŸ’µ', color: '#FF9800' }
     ],
-    settings: { currency: '₹' }
+    settings: { currency: 'â‚¹' }
 };
 
 // Main in-memory data object
@@ -242,7 +242,7 @@ function loadDataFromLocalStorage(shouldRender = true) {
         appData.expenseCategories = JSON.parse(localStorage.getItem('expenseCategories')) || defaultAppData.expenseCategories;
         appData.incomeCategories = JSON.parse(localStorage.getItem('incomeCategories')) || defaultAppData.incomeCategories;
         appData.accountTypes = JSON.parse(localStorage.getItem('accountTypes')) || defaultAppData.accountTypes;
-        appData.settings = JSON.parse(localStorage.getItem('settings')) || { currency: '₹' };
+        appData.settings = JSON.parse(localStorage.getItem('settings')) || { currency: 'â‚¹' };
     }
 
     if (shouldRender) {
@@ -469,7 +469,7 @@ function render() {
     // Ensure data exists before rendering
     if (!appData.transactions) appData.transactions = [];
     if (!appData.accounts) appData.accounts = [];
-    if (!appData.settings) appData.settings = { currency: '₹' };
+    if (!appData.settings) appData.settings = { currency: 'â‚¹' };
 
     renderTransactions();
     renderAccounts();
@@ -532,7 +532,7 @@ function createTransactionItem(tx) {
     item.innerHTML = `
         <div class="transaction-info">
             <div class="transaction-desc">${category?.icon || ''} ${tx.description || 'No description'}</div>
-            <div class="transaction-meta">${category?.name || 'Uncategorized'} • ${account?.name || 'Unknown Account'}</div>
+            <div class="transaction-meta">${category?.name || 'Uncategorized'} â€¢ ${account?.name || 'Unknown Account'}</div>
         </div>
         <div class="transaction-amount ${tx.type}">${formatCurrency(tx.amount)}</div>
     `;
@@ -722,7 +722,7 @@ function updateAccountTypeDropdown() {
 
 function generateId() { return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9); }
 function formatDate(date) { return date.toISOString().split('T')[0]; }
-function formatCurrency(amount) { return (appData.settings.currency || '₹') + (amount || 0).toLocaleString('en-IN'); }
+function formatCurrency(amount) { return (appData.settings.currency || 'â‚¹') + (amount || 0).toLocaleString('en-IN'); }
 function getAccount(id) { return (appData.accounts || []).find(acc => acc.id === id); }
 function getCategory(id, type) { return (type === 'income' ? (appData.incomeCategories || []) : (appData.expenseCategories || [])).find(cat => cat.id === id); }
 function getMonthTransactions() { return (appData.transactions || []).filter(tx => { const d = new Date(tx.date); return d.getMonth() === currentMonth.getMonth() && d.getFullYear() === currentMonth.getFullYear(); }); }
@@ -747,7 +747,7 @@ function getTransactionsByPeriod(period) {
     });
 }
 function getRandomColor() { return ['#F44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50'][Math.floor(Math.random() * 10)]; }
-function getRandomIcon() { return ['💰', '🏦', '💳', '💵', '📊', '📈', '🎯', '🎁', '🍔', '🚗'][Math.floor(Math.random() * 10)]; }
+function getRandomIcon() { return ['ðŸ’°', 'ðŸ¦', 'ðŸ’³', 'ðŸ’µ', 'ðŸ“Š', 'ðŸ“ˆ', 'ðŸŽ¯', 'ðŸŽ', 'ðŸ”', 'ðŸš—'][Math.floor(Math.random() * 10)]; }
 function exportData() {
     const dataStr = JSON.stringify(appData, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -757,4 +757,3 @@ function exportData() {
     link.download = 'expense-tracker-data.json';
     link.click();
 }
-
