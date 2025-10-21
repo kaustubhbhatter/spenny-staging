@@ -168,6 +168,7 @@
         <span class="close">&times;</span>
         <h2>Add Transaction</h2>
         <form id="transaction-form">
+            <input type="hidden" id="tx-id">
             <div class="form-group type-selector">
                 <button type="button" class="type-btn active" data-type="expense">Expense</button>
                 <button type="button" class="type-btn" data-type="income">Income</button>
@@ -232,6 +233,7 @@
         <span class="close">&times;</span>
         <h2>Add Account</h2>
         <form id="account-form">
+            <input type="hidden" id="acc-id">
             <div class="form-group">
                 <label>Account Name</label>
                 <input type="text" id="acc-name" required>
@@ -248,9 +250,9 @@
             </div>
 
             <div class="form-group">
-                <label>
+                <label class="checkbox-label">
                     <input type="checkbox" id="acc-include" checked>
-                    Include in total balance
+                    <span>Include in total balance</span>
                 </label>
             </div>
 
