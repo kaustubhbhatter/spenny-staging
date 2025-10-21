@@ -13,7 +13,7 @@ const firebaseConfig = {
 // We declare Firebase services here but will initialize them later.
 let auth, db; 
 let currentUser = null;
-let currentMonth = new new Date();
+let currentMonth = new Date();
 let currentTransactionType = 'expense';
 let charts = {};
 
@@ -757,3 +757,4 @@ function exportData() {
     link.download = 'expense-tracker-data.json';
     link.click();
 }
+
