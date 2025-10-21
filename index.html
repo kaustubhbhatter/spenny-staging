@@ -302,6 +302,30 @@
     </div>
 </div>
 
+<div id="payment-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Pay Credit Card Bill</h2>
+        <form id="payment-form">
+            <div class="form-group">
+                <label>Amount to Pay</label>
+                <p id="payment-amount" class="payment-display-amount"></p>
+            </div>
+            <div class="form-group">
+                <label>Pay From Account</label>
+                <select id="payment-account" required></select>
+            </div>
+            
+            <input type="hidden" id="payment-card-id">
+            <input type="hidden" id="payment-amount-value">
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">Confirm Payment</button>
+                <button type="button" class="btn-secondary cancel-btn">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script src="app.js"></script>
 </body>
