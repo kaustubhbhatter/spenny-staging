@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js for analytics -->
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Main App Container -->
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>💰 Expense Tracker</h1>
+            <div id="user-profile" style="display: none;">
+                <span id="user-name"></span>
+                <button id="logout-btn" class="btn-secondary">Logout</button>
+            </div>
+            <button id="signin-btn" onclick="showAuthModal()" class="btn-secondary" style="display:block;">Sign In</button>
+            <div id="user-info" style="display:none;">
+                <span id="user-email"></span>
+                <button onclick="signOut()" class="btn-secondary">Sign Out</button>
+            </div>
+
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-navigation">
+            <button class="tab-btn active" data-tab="transactions">Transactions</button>
+            <button class="tab-btn" data-tab="analytics">Analytics</button>
+            <button class="tab-btn" data-tab="accounts">Accounts</button>
+            <button class="tab-btn" data-tab="settings">Settings</button>
+        </nav>
+
+        <!-- Transactions Screen -->
+        <div id="transactions-screen" class="screen active">
+            <div class="month-navigation">
+                <button id="prev-month" class="nav-btn">←</button>
+                <h2 id="current-month">October 2024</h2>
+                <button id="next-month" class="nav-btn">→</button>
+            </div>
+
+            <div class="monthly-summary">
+                <div class="summary-card income">
+                    <span class="label">Income</span>
+                    <span id="monthly-income" class="amount">₹0</span>
+                </div>
+                <div class="summary-card expense">
+                    <span class="label">Expense</span>
+                    <span id="monthly-expense" class="amount">₹0</span>
+                </div>
+                <div class="summary-card net">
+                    <span class="label">Net</span>
+                    <span id="monthly-net" class="amount">₹0</span>
+                </div>
+            </div>
+
+            <div id="transactions-list"></div>
+
+            <button id="add-transaction-btn" class="fab">+</button>
+        </div>
+
+        <!-- Analytics Screen -->
+        <div id="analytics-screen" class="screen">
+            <div class="period-selector">
+                <button class="period-btn active" data-period="day">Day</button>
+                <button class="period-btn" data-period="week">Week</button>
+                <button class="period-btn" data-period="month">Month</button>
+                <button class="period-btn" data-period="year">Year</button>
+            </div>
+
+            <div class="analytics-summary">
+                <div class="summary-card">
+                    <span class="label">Total Income</span>
+                    <span id="analytics-income" class="amount">₹0</span>
+                </div>
+                <div class="summary-card">
+                    <span class="label">Total Expenses</span>
+                    <span id="analytics-expense" class="amount">₹0</span>
+                </div>
+                <div class="summary-card">
+                    <span class="label">Net Savings</span>
+                    <span id="analytics-net" class="amount">₹0</span>
+                </div>
+            </div>
+
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>Category Distribution</h3>
+                    <canvas id="pie-chart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Income vs Expenses</h3>
+                    <canvas id="line-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Accounts Screen -->
+        <div id="accounts-screen" class="screen">
+            <div class="financial-summary">
+                <div class="summary-card assets">
+                    <span class="label">Total Assets</span>
+                    <span id="total-assets" class="amount">₹0</span>
+                </div>
+                <div class="summary-card liabilities">
+                    <span class="label">Total Liabilities</span>
+                    <span id="total-liabilities" class="amount">₹0</span>
+                </div>
+                <div class="summary-card networth">
+                    <span class="label">Net Worth</span>
+                    <span id="net-worth" class="amount">₹0</span>
+                </div>
+            </div>
+
+            <div id="accounts-list"></div>
+            <button id="add-account-btn" class="btn-primary">+ Add Account</button>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen">
+            <div class="settings-section">
+                <h3>Expense Categories</h3>
+                <div id="expense-categories-list"></div>
+                <button id="add-expense-category-btn" class="btn-secondary">+ Add Category</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>Income Categories</h3>
+                <div id="income-categories-list"></div>
+                <button id="add-income-category-btn" class="btn-secondary">+ Add Category</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>Account Types</h3>
+                <div id="account-types-list"></div>
+                <button id="add-account-type-btn" class="btn-secondary">+ Add Account Type</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>Data Management</h3>
+                <button id="export-data-btn" class="btn-secondary">Export Data</button>
+                <button id="clear-data-btn" class="btn-danger">Clear All Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Transaction Modal -->
+    <div id="transaction-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Transaction</h2>
+            <form id="transaction-form">
+                <div class="form-group type-selector">
+                    <button type="button" class="type-btn active" data-type="expense">Expense</button>
+                    <button type="button" class="type-btn" data-type="income">Income</button>
+                    <button type="button" class="type-btn" data-type="transfer">Transfer</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="tx-date" required>
+                </div>
+
+                <div class="form-group amount-group">
+                    <label>Amount</label>
+                    <div class="amount-input-wrapper">
+                        <input type="number" id="tx-amount" placeholder="0" required>
+                        <button type="button" id="recurring-icon" class="recurring-icon" title="Set Recurring">⟲</button>
+                    </div>
+                </div>
+
+                <div class="form-group" id="recurring-dropdown" style="display: none;">
+                    <label>Recurring</label>
+                    <select id="tx-recurring">
+                        <option value="none">None</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Account</label>
+                    <select id="tx-account" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="tx-category" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="tx-description" rows="3"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Save</button>
+                    <button type="button" class="btn-secondary cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Account Modal -->
+    <div id="account-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Account</h2>
+            <form id="account-form">
+                <div class="form-group">
+                    <label>Account Name</label>
+                    <input type="text" id="acc-name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Account Type</label>
+                    <select id="acc-type" required></select>
+                </div>
+
+                <div class="form-group">
+                    <label>Initial Balance</label>
+                    <input type="number" id="acc-balance" value="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="acc-include" checked>
+                        Include in total balance
+                    </label>
+                </div>
+
+                <div id="credit-card-fields" style="display: none;">
+                    <div class="form-group">
+                        <label>Credit Limit</label>
+                        <input type="number" id="acc-credit-limit">
+                    </div>
+                    <div class="form-group">
+                        <label>Billing Day</label>
+                        <input type="number" id="acc-billing-day" min="1" max="31">
+                    </div>
+                    <div class="form-group">
+                        <label>Payment Day</label>
+                        <input type="number" id="acc-payment-day" min="1" max="31">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Save</button>
+                    <button type="button" class="btn-secondary cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Authentication Modal -->
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAuthModal()">&times;</span>
+            
+            <div id="signin-form" style="display:block;">
+                <h2>Sign In</h2>
+                <input type="email" id="signin-email" placeholder="Email" class="form-control">
+                <input type="password" id="signin-password" placeholder="Password" class="form-control">
+                <button onclick="signInWithEmail()" class="btn-primary">Sign In</button>
+                <button onclick="signInWithGoogle()" class="btn-secondary">Sign In with Google</button>
+                <p><a href="#" onclick="showSignUpForm()">Create Account</a></p>
+            </div>
+            
+            <div id="signup-form" style="display:none;">
+                <h2>Sign Up</h2>
+                <input type="email" id="signup-email" placeholder="Email" class="form-control">
+                <input type="password" id="signup-password" placeholder="Password (6+ chars)" class="form-control">
+                <input type="password" id="signup-confirm-password" placeholder="Confirm Password" class="form-control">
+                <button onclick="signUpWithEmail()" class="btn-primary">Create Account</button>
+                <p><a href="#" onclick="showSignInForm()">Back to Sign In</a></p>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="app.js"></script>
+</body>
+</html>
