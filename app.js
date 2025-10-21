@@ -281,6 +281,12 @@ function setupEventListeners() {
         });
     });
 
+    document.getElementById('tx-account').addEventListener('change', () => {
+    if (currentTransactionType === 'transfer') {
+        updateToAccountDropdown();
+    }
+});
+
     // Month navigation
     document.getElementById('prev-month').addEventListener('click', () => {
         currentMonth.setMonth(currentMonth.getMonth() - 1);
@@ -298,14 +304,33 @@ function setupEventListeners() {
     });
 
     // Transaction form type buttons
-    document.querySelectorAll('.type-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            currentTransactionType = this.dataset.type;
+    // Transaction form type buttons
+document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentTransactionType = this.dataset.type;
+
+        const categoryGroup = document.getElementById('category-form-group');
+        const toAccountGroup = document.getElementById('to-account-form-group');
+        const categorySelect = document.getElementById('tx-category');
+        const toAccountSelect = document.getElementById('tx-to-account');
+
+        if (currentTransactionType === 'transfer') {
+            categoryGroup.style.display = 'none';
+            toAccountGroup.style.display = 'block';
+            categorySelect.required = false;
+            toAccountSelect.required = true;
+            updateToAccountDropdown(); // We'll create this helper function next
+        } else {
+            categoryGroup.style.display = 'block';
+            toAccountGroup.style.display = 'none';
+            categorySelect.required = true;
+            toAccountSelect.required = false;
             updateCategoryDropdown();
-        });
+        }
     });
+});
 
     // Recurring icon
     document.getElementById('recurring-icon').addEventListener('click', () => {
@@ -387,11 +412,17 @@ async function saveTransaction() {
         date: document.getElementById('tx-date').value,
         type: currentTransactionType,
         amount: parseFloat(document.getElementById('tx-amount').value),
-        accountId: document.getElementById('tx-account').value,
-        categoryId: document.getElementById('tx-category').value,
+        accountId: document.getElementById('tx-account').value, // From Account
         description: document.getElementById('tx-description').value,
         recurring: document.getElementById('tx-recurring').value
     };
+
+    if (currentTransactionType === 'transfer') {
+        transaction.toAccountId = document.getElementById('tx-to-account').value;
+    } else {
+        transaction.categoryId = document.getElementById('tx-category').value;
+    }
+
     appData.transactions.push(transaction);
     await saveData();
     closeModals();
@@ -492,6 +523,18 @@ function renderTransactions() {
     monthTransactions.forEach(tx => {
         if (tx.type === 'income') totalIncome += tx.amount;
         if (tx.type === 'expense') totalExpense += tx.amount;
+         if (tx.type === 'transfer') {
+        const toAccount = getAccount(tx.toAccountId);
+        const fromAccount = getAccount(tx.accountId);
+        // Count as expense if money moves from an included account to an excluded one
+        if (fromAccount && fromAccount.includeInTotal && toAccount && !toAccount.includeInTotal) {
+            totalExpense += tx.amount;
+        }
+        // Count as income if money moves from an excluded account to an included one
+        if (toAccount && toAccount.includeInTotal && fromAccount && !fromAccount.includeInTotal) {
+            totalIncome += tx.amount;
+        }
+    }
     });
 
     document.getElementById('monthly-income').textContent = formatCurrency(totalIncome);
@@ -527,6 +570,18 @@ function renderTransactions() {
         grouped[date].forEach(tx => {
             if (tx.type === 'income') dailyIncome += tx.amount;
             if (tx.type === 'expense') dailyExpense += tx.amount;
+             if (tx.type === 'transfer') {
+        const toAccount = getAccount(tx.toAccountId);
+        const fromAccount = getAccount(tx.accountId);
+        // Count as expense if money moves from an included account to an excluded one
+        if (fromAccount && fromAccount.includeInTotal && toAccount && !toAccount.includeInTotal) {
+            dailyExpense += tx.amount;
+        }
+         // Count as income if money moves from an excluded account to an included one
+        if (toAccount && toAccount.includeInTotal && fromAccount && !fromAccount.includeInTotal) {
+            dailyIncome += tx.amount;
+        }
+    }
         });
 
         // Create and append the summary element
@@ -723,6 +778,8 @@ function updateAccountDropdown() {
     });
 }
 
+
+
 function updateCategoryDropdown() {
     const categories = currentTransactionType === 'income' ? appData.incomeCategories : appData.expenseCategories;
     const select = document.getElementById('tx-category');
@@ -731,6 +788,19 @@ function updateCategoryDropdown() {
         const option = document.createElement('option');
         option.value = cat.id;
         option.textContent = `${cat.icon} ${cat.name}`;
+        select.appendChild(option);
+    });
+}
+
+function updateToAccountDropdown() {
+    const fromAccount = document.getElementById('tx-account').value;
+    const select = document.getElementById('tx-to-account');
+    select.innerHTML = '<option value="">Select account</option>';
+    // Filter out the 'from' account so you can't transfer to itself
+    (appData.accounts || []).filter(acc => acc.id !== fromAccount).forEach(acc => {
+        const option = document.createElement('option');
+        option.value = acc.id;
+        option.textContent = acc.name;
         select.appendChild(option);
     });
 }
