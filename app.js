@@ -722,20 +722,18 @@ function renderAccounts() {
                 lastBillingDate.setMonth(lastBillingDate.getMonth() - 1);
             }
             
-            const transactionsForCard = appData.transactions.filter(tx => tx.accountId === acc.id || tx.toAccountId === acc.id);
-            let balancePayable = 0;
-            transactionsForCard.forEach(tx => {
-                const txDate = new Date(tx.date);
-                if (txDate <= lastBillingDate) {
-                     if (tx.accountId === acc.id) balancePayable -= tx.amount; // Expense from card
-                     if (tx.toAccountId === acc.id) balancePayable += tx.amount; // Payment to card
+            // Calculate outstanding charges (new expenses since last bill)
+            let outstandingBalance = 0;
+            appData.transactions.forEach(tx => {
+                if (tx.accountId === acc.id && new Date(tx.date) > lastBillingDate) {
+                    outstandingBalance -= tx.amount;
                 }
             });
 
-            // The card's total balance still contributes to assets if positive (e.g., overpaid)
+            // Balance Payable is the total balance MINUS the new charges.
+            const balancePayable = acc.balance - outstandingBalance;
+            
             if (acc.balance > 0) assets += acc.balance;
-
-            // Only add to liabilities if there's a payable balance
             if (balancePayable < 0) {
                  liabilities += Math.abs(balancePayable);
             }
@@ -780,30 +778,26 @@ function renderAccounts() {
                     lastBillingDate.setMonth(lastBillingDate.getMonth() - 1);
                 }
 
-                const transactionsForCard = appData.transactions.filter(tx => tx.accountId === acc.id || tx.toAccountId === acc.id);
-                let balancePayable = 0;
                 let outstandingBalance = 0;
-
-                transactionsForCard.forEach(tx => {
-                    const txDate = new Date(tx.date);
-                    const amount = (tx.accountId === acc.id) ? -tx.amount : tx.amount;
-                    if (txDate <= lastBillingDate) {
-                        balancePayable += amount;
-                    } else {
-                        outstandingBalance += amount;
+                appData.transactions.forEach(tx => {
+                    // Only count expenses on this card that are after the last billing date
+                    if (tx.accountId === acc.id && tx.type === 'expense' && new Date(tx.date) > lastBillingDate) {
+                        outstandingBalance -= tx.amount;
                     }
                 });
+
+                const balancePayable = acc.balance - outstandingBalance;
 
                 item.innerHTML = `
                     <div class="account-info"><h3>${acc.name}</h3></div>
                     <div class="credit-card-details">
                         <div class="balance-line">
                             <span class="label">Balance Payable</span>
-                            <span class="amount ${balancePayable < 0 ? 'negative' : 'positive'}">${formatCurrency(balancePayable)}</span>
+                            <span class="amount ${balancePayable <= 0 ? 'negative' : 'positive'}">${formatCurrency(balancePayable)}</span>
                         </div>
                         <div class="balance-line">
                             <span class="label">Outstanding Balance</span>
-                            <span class="amount ${outstandingBalance < 0 ? 'negative' : 'positive'}">${formatCurrency(outstandingBalance)}</span>
+                            <span class="amount ${outstandingBalance <= 0 ? 'negative' : 'positive'}">${formatCurrency(outstandingBalance)}</span>
                         </div>
                     </div>
                     ${balancePayable < 0 ? `<button class="pay-now-btn" data-card-id="${acc.id}" data-amount="${Math.abs(balancePayable)}">Pay Now</button>` : ''}
@@ -935,7 +929,7 @@ function openAccountModal() {
 }
 
 function closeModals() {
-    document.querySelectorAll('#transaction-modal, #account-modal').forEach(modal => modal.classList.remove('show'));
+    document.querySelectorAll('#transaction-modal, #account-modal, #payment-modal').forEach(modal => modal.classList.remove('show'));
     document.querySelectorAll('form').forEach(form => form.reset());
 }
 
