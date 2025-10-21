@@ -1156,6 +1156,65 @@ body {
     color: var(--color-text-secondary);
 }
 
+/* START: New Styles for Accounts Screen & Payment Modal */
+
+/* Specific layout for Credit Card items */
+.account-item.credit-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-12);
+}
+
+.credit-card-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    width: 100%;
+}
+
+.balance-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--font-size-base);
+}
+
+.balance-line .label {
+    color: var(--color-text-secondary);
+}
+
+.balance-line .amount {
+    font-weight: var(--font-weight-medium);
+}
+
+/* Pay Now Button */
+.pay-now-btn {
+    background: var(--color-primary);
+    color: var(--color-btn-primary-text);
+    border: none;
+    padding: var(--space-8) var(--space-16);
+    border-radius: var(--radius-base);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    transition: background-color var(--duration-fast) var(--ease-standard);
+    align-self: flex-end; /* Pushes button to the right */
+}
+
+.pay-now-btn:hover {
+    background: var(--color-primary-hover);
+}
+
+/* Payment Modal Specifics */
+.payment-display-amount {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-error);
+    margin: 0;
+}
+
+/* END: New Styles */
+
 /* Charts */
 .charts-container {
     display: grid;
