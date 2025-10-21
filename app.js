@@ -287,6 +287,46 @@ function setupEventListeners() {
     }
 });
 
+    // Listener for editing transactions
+document.getElementById('transactions-list').addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.edit-btn');
+    if (editBtn) {
+        openTransactionModal(editBtn.dataset.id);
+    }
+});
+
+// Listener for editing accounts
+document.getElementById('accounts-list').addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.edit-btn');
+    if (editBtn) {
+        openAccountModal(editBtn.dataset.id);
+    }
+});
+
+// Listener for editing expense categories
+document.getElementById('expense-categories-list').addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.edit-btn');
+    if (editBtn) {
+        editCategory('expense', editBtn.dataset.id);
+    }
+});
+
+// Listener for editing income categories
+document.getElementById('income-categories-list').addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.edit-btn');
+    if (editBtn) {
+        editCategory('income', editBtn.dataset.id);
+    }
+});
+
+// Listener for editing account types
+document.getElementById('account-types-list').addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.edit-btn');
+    if (editBtn) {
+        editAccountType(editBtn.dataset.id);
+    }
+});
+
     // Month navigation
     document.getElementById('prev-month').addEventListener('click', () => {
         currentMonth.setMonth(currentMonth.getMonth() - 1);
@@ -427,55 +467,105 @@ document.querySelectorAll('.type-btn').forEach(btn => {
 
 // --- DATA MODIFICATION FUNCTIONS (NOW ASYNC) ---
 async function saveTransaction() {
-    const transaction = {
-        id: generateId(),
-        date: document.getElementById('tx-date').value,
-        type: currentTransactionType,
-        amount: parseFloat(document.getElementById('tx-amount').value),
-        accountId: document.getElementById('tx-account').value, // From Account
-        description: document.getElementById('tx-description').value,
-        recurring: document.getElementById('tx-recurring').value
-    };
+    const id = document.getElementById('tx-id').value;
+    const amount = parseFloat(document.getElementById('tx-amount').value);
+    const accountId = document.getElementById('tx-account').value;
+    const type = currentTransactionType;
 
-    // --- START: New Balance Update Logic ---
-    const fromAccount = getAccount(transaction.accountId);
+    if (id) { // --- UPDATE LOGIC ---
+        const originalTx = appData.transactions.find(t => t.id === id);
+        if (!originalTx) return;
 
-    if (transaction.type === 'expense') {
-        if(fromAccount) fromAccount.balance -= transaction.amount;
-        transaction.categoryId = document.getElementById('tx-category').value;
-    } 
-    else if (transaction.type === 'income') {
-        if(fromAccount) fromAccount.balance += transaction.amount;
-        transaction.categoryId = document.getElementById('tx-category').value;
+        // 1. Revert original transaction's effect on balances
+        const oldFromAccount = getAccount(originalTx.accountId);
+        if (originalTx.type === 'expense') oldFromAccount.balance += originalTx.amount;
+        if (originalTx.type === 'income') oldFromAccount.balance -= originalTx.amount;
+        if (originalTx.type === 'transfer') {
+            const oldToAccount = getAccount(originalTx.toAccountId);
+            oldFromAccount.balance += originalTx.amount;
+            if (oldToAccount) oldToAccount.balance -= originalTx.amount;
+        }
+
+        // 2. Apply new transaction's effect on balances
+        const newFromAccount = getAccount(accountId);
+        if (type === 'expense') newFromAccount.balance -= amount;
+        if (type === 'income') newFromAccount.balance += amount;
+        if (type === 'transfer') {
+            const newToAccountId = document.getElementById('tx-to-account').value;
+            const newToAccount = getAccount(newToAccountId);
+            newFromAccount.balance -= amount;
+            if (newToAccount) newToAccount.balance += amount;
+            originalTx.toAccountId = newToAccountId;
+        }
+
+        // 3. Update transaction object itself
+        originalTx.date = document.getElementById('tx-date').value;
+        originalTx.type = type;
+        originalTx.amount = amount;
+        originalTx.accountId = accountId;
+        originalTx.description = document.getElementById('tx-description').value;
+        originalTx.recurring = document.getElementById('tx-recurring').value;
+        originalTx.categoryId = type !== 'transfer' ? document.getElementById('tx-category').value : null;
+
+    } else { // --- CREATE NEW LOGIC ---
+        const transaction = {
+            id: generateId(),
+            date: document.getElementById('tx-date').value,
+            type: type,
+            amount: amount,
+            accountId: accountId,
+            description: document.getElementById('tx-description').value,
+            recurring: document.getElementById('tx-recurring').value
+        };
+        
+        const fromAccount = getAccount(transaction.accountId);
+        if (type === 'expense') {
+            if (fromAccount) fromAccount.balance -= transaction.amount;
+            transaction.categoryId = document.getElementById('tx-category').value;
+        } else if (type === 'income') {
+            if (fromAccount) fromAccount.balance += transaction.amount;
+            transaction.categoryId = document.getElementById('tx-category').value;
+        } else if (type === 'transfer') {
+            transaction.toAccountId = document.getElementById('tx-to-account').value;
+            const toAccount = getAccount(transaction.toAccountId);
+            if (fromAccount) fromAccount.balance -= transaction.amount;
+            if (toAccount) toAccount.balance += transaction.amount;
+        }
+        appData.transactions.push(transaction);
     }
-    else if (transaction.type === 'transfer') {
-        transaction.toAccountId = document.getElementById('tx-to-account').value;
-        const toAccount = getAccount(transaction.toAccountId);
-        if(fromAccount) fromAccount.balance -= transaction.amount;
-        if(toAccount) toAccount.balance += transaction.amount;
-    }
-    // --- END: New Balance Update Logic ---
 
-    appData.transactions.push(transaction);
     await saveData();
     closeModals();
-    renderTransactions(); // This will now show the correct data
-    renderAccounts(); // Also re-render accounts to be safe
+    renderTransactions();
+    renderAccounts();
 }
+
+
 async function saveAccount() {
-    const account = {
-        id: generateId(),
+    const id = document.getElementById('acc-id').value;
+    const accountData = {
         name: document.getElementById('acc-name').value,
         type: document.getElementById('acc-type').value,
         balance: parseFloat(document.getElementById('acc-balance').value),
         includeInTotal: document.getElementById('acc-include').checked
     };
-    if (account.type === 'Credit Card') {
-        account.creditLimit = parseFloat(document.getElementById('acc-credit-limit').value) || 0;
-        account.billingDay = parseInt(document.getElementById('acc-billing-day').value) || 1;
-        account.paymentDay = parseInt(document.getElementById('acc-payment-day').value) || 1;
+
+    if (accountData.type === 'Credit Card') {
+        accountData.creditLimit = parseFloat(document.getElementById('acc-credit-limit').value) || 0;
+        accountData.billingDay = parseInt(document.getElementById('acc-billing-day').value) || 1;
+        accountData.paymentDay = parseInt(document.getElementById('acc-payment-day').value) || 1;
     }
-    appData.accounts.push(account);
+
+    if (id) { // Update existing account
+        const accountIndex = appData.accounts.findIndex(acc => acc.id === id);
+        if (accountIndex > -1) {
+            appData.accounts[accountIndex] = { ...appData.accounts[accountIndex], ...accountData };
+        }
+    } else { // Add new account
+        accountData.id = generateId();
+        appData.accounts.push(accountData);
+    }
+    
     await saveData();
     closeModals();
     renderAccounts();
@@ -559,6 +649,31 @@ async function addAccountType(name) {
     appData.accountTypes.push(type);
     await saveData();
     renderSettings();
+}
+
+async function editCategory(type, categoryId) {
+    const categories = type === 'expense' ? appData.expenseCategories : appData.incomeCategories;
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) return;
+
+    const newName = prompt('Enter new category name:', category.name);
+    if (newName && newName.trim() !== '') {
+        category.name = newName.trim();
+        await saveData();
+        renderSettings();
+    }
+}
+
+async function editAccountType(typeId) {
+    const accType = appData.accountTypes.find(t => t.id === typeId);
+    if (!accType) return;
+    
+    const newName = prompt('Enter new account type name:', accType.name);
+    if (newName && newName.trim() !== '') {
+        accType.name = newName.trim();
+        await saveData();
+        renderSettings();
+    }
 }
 
 async function clearAllData() {
@@ -721,11 +836,11 @@ function createTransactionItem(tx) {
     }
 
     item.innerHTML = `
-        <div class="transaction-info">
-            <div class="transaction-desc">${categoryIcon} ${desc}</div>
-            <div class="transaction-meta">${meta}</div>
-        </div>
-        <div class="transaction-amount ${tx.type}">${tx.type === 'expense' ? '-' : ''}${formatCurrency(tx.amount)}</div>
+        <div class="transaction-info">...</div>
+        <div class="transaction-amount ${tx.type}">...</div>
+        <button class="edit-btn" data-id="${tx.id}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+        </button>
     `;
     return item;
 }
@@ -828,11 +943,13 @@ function renderAccounts() {
                             <span class="amount ${outstandingBalance <= 0 ? 'negative' : 'positive'}">${formatCurrency(outstandingBalance)}</span>
                         </div>
                     </div>
+                    <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                     ${balancePayable < 0 ? `<button class="pay-now-btn" data-card-id="${acc.id}" data-amount="${Math.abs(balancePayable)}">Pay Now</button>` : ''}
                 `;
             } else {
                 item.innerHTML = `
                     <div class="account-info"><h3>${acc.name}</h3></div>
+                    <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                     <div class="account-balance ${balanceClass}">${formatCurrency(acc.balance)}</div>
                 `;
             }
@@ -925,6 +1042,10 @@ function renderCategoriesList(type) {
         tag.style.backgroundColor = cat.color + '20';
         tag.style.color = cat.color;
         tag.textContent = `${cat.icon} ${cat.name}`;
+        tag.innerHTML = `
+            ${cat.icon} ${cat.name}
+            <button class="edit-btn" data-id="${cat.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+        `;
         listEl.appendChild(tag);
     });
 }
@@ -938,22 +1059,92 @@ function renderAccountTypesList() {
         tag.style.backgroundColor = type.color + '20';
         tag.style.color = type.color;
         tag.textContent = `${type.icon} ${type.name}`;
+        tag.innerHTML = `
+            ${cat.icon} ${cat.name}
+            <button class="edit-btn" data-id="${type.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+        `;
         listEl.appendChild(tag);
     });
 }
 
-function openTransactionModal() {
+function openTransactionModal(transactionId = null) {
     document.getElementById('transaction-form').reset();
-    document.getElementById('transaction-modal').classList.add('show');
-    document.getElementById('tx-date').valueAsDate = new Date();
-    updateAccountDropdown();
-    updateCategoryDropdown();
+    document.getElementById('tx-id').value = '';
+    const modal = document.getElementById('transaction-modal');
+    const modalTitle = modal.querySelector('h2');
+    
+    if (transactionId) {
+        modalTitle.textContent = 'Edit Transaction';
+        const tx = appData.transactions.find(t => t.id === transactionId);
+        if (!tx) return;
+
+        document.getElementById('tx-id').value = tx.id;
+        document.getElementById('tx-date').value = tx.date;
+        document.getElementById('tx-amount').value = tx.amount;
+        document.getElementById('tx-account').value = tx.accountId;
+        document.getElementById('tx-description').value = tx.description;
+        document.getElementById('tx-recurring').value = tx.recurring || 'none';
+
+        // Set the correct type button and show/hide fields
+        document.querySelectorAll('.type-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.type === tx.type);
+        });
+        currentTransactionType = tx.type;
+
+        if (tx.type === 'transfer') {
+            document.getElementById('category-form-group').style.display = 'none';
+            document.getElementById('to-account-form-group').style.display = 'block';
+            updateToAccountDropdown();
+            document.getElementById('tx-to-account').value = tx.toAccountId;
+        } else {
+            document.getElementById('category-form-group').style.display = 'block';
+            document.getElementById('to-account-form-group').style.display = 'none';
+            updateCategoryDropdown();
+            document.getElementById('tx-category').value = tx.categoryId;
+        }
+    } else {
+        modalTitle.textContent = 'Add Transaction';
+        document.getElementById('tx-date').valueAsDate = new Date();
+        document.querySelector('.type-btn[data-type="expense"]').click(); // Default to expense
+    }
+    
+    updateAccountDropdown(); // Always needs to be populated
+    modal.classList.add('show');
 }
 
-function openAccountModal() {
+function openAccountModal(accountId = null) {
     document.getElementById('account-form').reset();
-    document.getElementById('account-modal').classList.add('show');
+    document.getElementById('acc-id').value = '';
+    const modal = document.getElementById('account-modal');
+    const modalTitle = modal.querySelector('h2');
     updateAccountTypeDropdown();
+
+    if (accountId) {
+        modalTitle.textContent = 'Edit Account';
+        const acc = appData.accounts.find(a => a.id === accountId);
+        if (!acc) return;
+
+        document.getElementById('acc-id').value = acc.id;
+        document.getElementById('acc-name').value = acc.name;
+        document.getElementById('acc-type').value = acc.type;
+        document.getElementById('acc-balance').value = acc.balance;
+        document.getElementById('acc-include').checked = acc.includeInTotal;
+
+        const creditFields = document.getElementById('credit-card-fields');
+        if (acc.type === 'Credit Card') {
+            creditFields.style.display = 'block';
+            document.getElementById('acc-credit-limit').value = acc.creditLimit || '';
+            document.getElementById('acc-billing-day').value = acc.billingDay || '';
+            document.getElementById('acc-payment-day').value = acc.paymentDay || '';
+        } else {
+            creditFields.style.display = 'none';
+        }
+    } else {
+        modalTitle.textContent = 'Add Account';
+        document.getElementById('credit-card-fields').style.display = 'none';
+    }
+
+    modal.classList.add('show');
 }
 
 function closeModals() {
