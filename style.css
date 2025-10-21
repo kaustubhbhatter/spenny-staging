@@ -1000,8 +1000,9 @@ body {
 .day-summary {
     display: flex;
     gap: var(--space-16);
-    margin-bottom: var(--space-10);
+    margin-bottom: 0; /* Change from var(--space-10) to 0 */
     font-size: var(--font-size-base);
+    padding: var(--space-10) 0; /* Add some vertical padding */
 }
 
 .day-summary span {
@@ -1030,6 +1031,7 @@ body {
     align-items: center;
     padding: var(--space-10);
     border-bottom: 1px solid var(--color-card-border-inner);
+    border-top: 1px solid var(--color-card-border-inner);
 }
 
 .transaction-item:last-child {
