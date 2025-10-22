@@ -98,9 +98,13 @@ async function handleDataOnLogin() {
             await saveData(); // Save the local data to Firestore
             localStorage.clear(); // Clean up local data after successful upload
             console.log("Local data cleared after upload.");
+            // After uploading, the app has the correct data. We can stop here.
+            return; 
         }
     }
-    // Load the authoritative data from Firestore
+
+    // This will now ONLY run if there was no local data, 
+    // or if the user explicitly chose NOT to upload it.
     await loadDataFromFirestore();
 }
 
