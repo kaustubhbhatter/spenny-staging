@@ -79,6 +79,18 @@
   --color-warning-rgb: 168, 75, 47;
   --color-info-rgb: 98, 108, 113;
 
+    /* Inside :root */
+  --color-surface-rgb: 255, 255, 253;
+
+  /* Inside @media (prefers-color-scheme: dark) :root */
+  --color-surface-rgb: 38, 40, 40;
+
+  /* Inside [data-color-scheme="dark"] */
+  --color-surface-rgb: 38, 40, 40;
+
+  /* Inside [data-color-scheme="light"] */
+  --color-surface-rgb: 255, 255, 253;
+
   /* Typography */
   --font-family-base: "FKGroteskNeue", "Geist", "Inter", -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -356,6 +368,8 @@ body {
     box-shadow: var(--shadow-lg);
     border: 1px solid var(--color-card-border);
     z-index: 999;
+    background: rgba(var(--color-surface-rgb, 255, 255, 253), 0.85);
+    backdrop-filter: blur(10px);
 }
 
 /* Floating Menu Buttons */
@@ -382,6 +396,7 @@ body {
 
 #floating-menu .tab-btn.active {
     color: var(--color-primary);
+    background-color: var(--color-secondary);
 }
 
 /* Icon and Text inside buttons */
@@ -1081,7 +1096,7 @@ body {
 }
 
 .transaction-amount.transfer {
-    color: var(--color-primary);
+    color: var(--color-text-secondary);
 }
 
 /* Accounts List */
@@ -1113,24 +1128,40 @@ body {
 }
 /* END: Add new styles */
 
-.account-item {
+.account-group-card {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: var(--space-16);
+    background: var(--color-surface);
+    margin-bottom: var(--space-16);
+}
+
+.account-items-container {
+    padding: 0 var(--space-8) var(--space-8);
+}
+
+.account-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--color-surface);
+    padding: var(--space-12);
+    border-radius: var(--radius-base);
+    position: relative;
+}
+
+.account-item:hover {
+    background-color: var(--color-secondary);
 }
 
 .account-info h3 {
-    margin-bottom: 0;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
     color: var(--color-text);
+    margin: 0;
 }
 
 .account-balance {
-    font-size: var(--font-size-3xl);
-    font-weight: var(--font-weight-bold);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
 }
 
 .account-balance.positive {
@@ -1150,24 +1181,49 @@ body {
 /* START: New Styles for Accounts Screen & Payment Modal */
 
 /* Specific layout for Credit Card items */
-.account-item.credit-card {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-12);
+.credit-card-columns {
+    display: flex;
+    gap: var(--space-16);
+    text-align: right;
 }
 
-.credit-card-details {
+.balance-column {
     display: flex;
     flex-direction: column;
-    gap: var(--space-8);
-    width: 100%;
 }
 
-.balance-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.balance-column .label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+}
+
+.balance-column .amount {
     font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+}
+
+.balance-column .amount.negative {
+    color: var(--color-error);
+}
+
+/* Pay Now button hover effect */
+.account-item .pay-now-btn {
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--duration-fast) var(--ease-standard);
+    position: absolute;
+    right: 48px; /* Position next to the edit button */
+    top: 50%;
+    transform: translateY(-50%) scale(0.8);
+    padding: var(--space-4) var(--space-10);
+    font-size: var(--font-size-sm);
+}
+
+.account-item:hover .pay-now-btn {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-50%) scale(1);
 }
 
 .balance-line .label {
