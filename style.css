@@ -1013,39 +1013,30 @@ body {
     background: var(--color-surface);
 }
 
+/* --- MODIFIED: Day Header Styling --- */
 .day-header {
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-bold);
     margin-bottom: var(--space-10);
     color: var(--color-text);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.day-summary {
+.day-totals {
     display: flex;
     gap: var(--space-16);
-    margin-bottom: 0; /* Change from var(--space-10) to 0 */
     font-size: var(--font-size-base);
-    padding: var(--space-10) 0; /* Add some vertical padding */
+    font-weight: var(--font-weight-medium);
 }
 
-.day-summary span {
-    padding: var(--space-6) var(--space-10);
-    border-radius: var(--radius-sm);
-}
-
-.day-summary .income {
-    background: rgba(var(--color-success-rgb), var(--status-bg-opacity));
+.day-totals .income {
     color: var(--color-success);
 }
 
-.day-summary .expense {
-    background: rgba(var(--color-error-rgb), var(--status-bg-opacity));
+.day-totals .expense {
     color: var(--color-error);
-}
-
-.day-summary .net {
-    background: rgba(var(--color-teal-500-rgb), var(--status-bg-opacity));
-    color: var(--color-primary);
 }
 
 .transaction-item {
@@ -1303,22 +1294,20 @@ body {
     background: rgba(255, 255, 255, 0.2);
 }
 
-/* 2. Edit Button Styles */
-.edit-btn {
-    display: none; /* Hidden by default */
-    position: absolute;
-    top: 10px;
-    right: 10px;
+/* --- MODIFIED: Edit and Delete Buttons --- */
+.edit-btn, .delete-btn {
+    display: flex; /* Changed from none to flex to be controlled by wrapper */
     background: var(--color-secondary);
     border: 1px solid var(--color-border);
     border-radius: 50%;
     width: 28px;
     height: 28px;
+    padding: 0;
     cursor: pointer;
     justify-content: center;
     align-items: center;
-    opacity: 0.7;
-    transition: opacity 150ms ease;
+    opacity: 0.8;
+    transition: all 150ms ease;
 }
 
 .edit-btn:hover {
@@ -1326,23 +1315,50 @@ body {
     background: var(--color-primary);
 }
 
-.edit-btn svg {
+.delete-btn:hover {
+    opacity: 1;
+    background: var(--color-error);
+}
+
+.edit-btn svg, .delete-btn svg {
     width: 16px;
     height: 16px;
     stroke: var(--color-text);
 }
 
-.edit-btn:hover svg {
+.edit-btn:hover svg, .delete-btn:hover svg {
     stroke: var(--color-btn-primary-text);
 }
 
+.transaction-actions {
+    display: none; /* Hide action buttons by default */
+    gap: var(--space-8);
+}
+
+.transaction-item:hover .transaction-actions {
+    display: flex; /* Show buttons on parent hover */
+}
+
+/* Adjust layout to hide amount and show actions on hover */
+.transaction-item:hover .transaction-amount {
+    display: none;
+}
+
+
 /* Make parent elements relative to position the edit button */
-.transaction-item, .account-item, .category-tag {
+.account-item, .category-tag {
     position: relative;
 }
 
-/* Show edit button on hover */
-.transaction-item:hover .edit-btn,
+.account-item .edit-btn, .category-tag .edit-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: none;
+}
+
+
+/* Show edit button on hover for accounts and categories */
 .account-item:hover .edit-btn,
 .category-tag:hover .edit-btn {
     display: inline-flex;
@@ -1686,9 +1702,10 @@ body {
         margin: var(--space-16);
     }
 
-    .day-summary {
-        flex-direction: column;
-        gap: var(--space-8);
+    .day-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-8);
     }
 
     .transaction-item {
