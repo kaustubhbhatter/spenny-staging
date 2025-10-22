@@ -106,7 +106,16 @@ async function handleDataOnLogin() {
 
 function updateUIForUser(user) {
     document.getElementById('user-info').style.display = 'flex';
-    document.getElementById('user-email').textContent = user.email;
+    
+    // Prioritize display name, otherwise create one from email
+    let displayName = user.displayName;
+    if (!displayName && user.email) {
+        displayName = user.email.split('@')[0]
+                          .replace(/[._]/g, ' ') // a.b -> a b
+                          .replace(/\b\w/g, l => l.toUpperCase()); // capitalize
+    }
+    
+    document.getElementById('user-display-name').textContent = displayName || 'User';
     document.getElementById('signin-btn').style.display = 'none';
     closeAuthModal();
 }
@@ -953,73 +962,86 @@ function renderAccounts() {
     document.getElementById('net-worth').textContent = formatCurrency(assets - liabilities);
 
     // --- New Grouping and Rendering Logic ---
-    const listEl = document.getElementById('accounts-list');
-    listEl.innerHTML = '';
+    // --- New Grouping and Rendering Logic ---
+const listEl = document.getElementById('accounts-list');
+listEl.innerHTML = '';
 
-    const groupedAccounts = appData.accounts.reduce((groups, account) => {
-        const type = account.type || 'Uncategorized';
-        (groups[type] = groups[type] || []).push(account);
-        return groups;
-    }, {});
+const groupedAccounts = appData.accounts.reduce((groups, account) => {
+    const type = account.type || 'Uncategorized';
+    (groups[type] = groups[type] || []).push(account);
+    return groups;
+}, {});
 
-    Object.keys(groupedAccounts).forEach(type => {
-        const accountsInGroup = groupedAccounts[type];
-        const groupTotal = accountsInGroup.reduce((sum, acc) => sum + acc.balance, 0);
+Object.keys(groupedAccounts).forEach(type => {
+    const accountsInGroup = groupedAccounts[type];
+    const groupTotal = accountsInGroup.reduce((sum, acc) => sum + acc.balance, 0);
 
-        const groupHeader = document.createElement('div');
-        groupHeader.className = 'account-group-header';
-        groupHeader.innerHTML = `<span class="group-name">${type}</span><span class="group-total">${formatCurrency(groupTotal)}</span>`;
-        listEl.appendChild(groupHeader);
+    // 1. Create the main card for the group
+    const groupCard = document.createElement('div');
+    groupCard.className = 'account-group-card';
+    
+    // 2. Create and append the header
+    const groupHeader = document.createElement('div');
+    groupHeader.className = 'account-group-header';
+    groupHeader.innerHTML = `<span class="group-name">${type}</span><span class="group-total">${formatCurrency(groupTotal)}</span>`;
+    groupCard.appendChild(groupHeader);
+    
+    // 3. Create a container for the account items
+    const itemsContainer = document.createElement('div');
+    itemsContainer.className = 'account-items-container';
+    
+    // 4. Loop through accounts and create individual items
+    accountsInGroup.forEach(acc => {
+        const item = document.createElement('div');
+        item.className = 'account-item';
+        const balanceClass = acc.balance >= 0 ? 'positive' : 'negative';
 
-        accountsInGroup.forEach(acc => {
-            const item = document.createElement('div');
-            item.className = 'account-item';
-            const balanceClass = acc.balance >= 0 ? 'positive' : 'negative';
-
-            if (acc.type === 'Credit Card') {
-                item.classList.add('credit-card');
-                
-                const today = new Date();
-                const billingDay = acc.billingDay || 15;
-                let lastBillingDate = new Date(today.getFullYear(), today.getMonth(), billingDay);
-                if (today.getDate() < billingDay) {
-                    lastBillingDate.setMonth(lastBillingDate.getMonth() - 1);
-                }
-
-                let outstandingBalance = 0;
-                appData.transactions.forEach(tx => {
-                    if (tx.accountId === acc.id && tx.type === 'expense' && new Date(tx.date) > lastBillingDate) {
-                        outstandingBalance -= tx.amount;
-                    }
-                });
-
-                const balancePayable = acc.balance - outstandingBalance;
-
-                item.innerHTML = `
-                    <div class="account-info"><h3>${acc.name}</h3></div>
-                    <div class="credit-card-details">
-                        <div class="balance-line">
-                            <span class="label">Balance Payable</span>
-                            <span class="amount ${balancePayable < 0 ? 'negative' : 'positive'}">${formatCurrency(balancePayable)}</span>
-                        </div>
-                        <div class="balance-line">
-                            <span class="label">Outstanding Balance</span>
-                            <span class="amount ${outstandingBalance < 0 ? 'negative' : 'positive'}">${formatCurrency(outstandingBalance)}</span>
-                        </div>
-                    </div>
-                    ${balancePayable < 0 ? `<button class="pay-now-btn" data-card-id="${acc.id}" data-amount="${Math.abs(balancePayable)}">Pay Now</button>` : ''}
-                    <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-                `;
-            } else {
-                item.innerHTML = `
-                    <div class="account-info"><h3>${acc.name}</h3></div>
-                    <div class="account-balance ${balanceClass}">${formatCurrency(acc.balance)}</div>
-                    <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-                `;
+        if (acc.type === 'Credit Card') {
+            item.classList.add('credit-card');
+            
+            const today = new Date();
+            const billingDay = acc.billingDay || 15;
+            let lastBillingDate = new Date(today.getFullYear(), today.getMonth(), billingDay);
+            if (today.getDate() < billingDay) {
+                lastBillingDate.setMonth(lastBillingDate.getMonth() - 1);
             }
-            listEl.appendChild(item);
-        });
+
+            let outstandingBalance = 0;
+            appData.transactions.forEach(tx => {
+                if (tx.accountId === acc.id && tx.type === 'expense' && new Date(tx.date) > lastBillingDate) {
+                    outstandingBalance -= tx.amount;
+                }
+            });
+            const balancePayable = acc.balance - outstandingBalance;
+
+            item.innerHTML = `
+                <div class="account-info"><h3>${acc.name}</h3></div>
+                <div class="credit-card-columns">
+                    <div class="balance-column">
+                        <span class="label">Payable</span>
+                        <span class="amount ${balancePayable < 0 ? 'negative' : 'positive'}">${formatCurrency(balancePayable)}</span>
+                    </div>
+                    <div class="balance-column">
+                        <span class="label">Outstanding</span>
+                        <span class="amount ${outstandingBalance < 0 ? 'negative' : 'positive'}">${formatCurrency(outstandingBalance)}</span>
+                    </div>
+                </div>
+                ${balancePayable < 0 ? `<button class="pay-now-btn" data-card-id="${acc.id}" data-amount="${Math.abs(balancePayable)}">Pay</button>` : ''}
+                <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+            `;
+        } else {
+            item.innerHTML = `
+                <div class="account-info"><h3>${acc.name}</h3></div>
+                <div class="account-balance ${balanceClass}">${formatCurrency(acc.balance)}</div>
+                <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+            `;
+        }
+        itemsContainer.appendChild(item);
     });
+    
+    groupCard.appendChild(itemsContainer);
+    listEl.appendChild(groupCard);
+});
 }
 
 function renderAnalytics() {
