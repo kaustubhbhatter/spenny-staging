@@ -287,11 +287,16 @@ function setupEventListeners() {
     }
 });
 
-    // Listener for editing transactions
+// Listener for editing and deleting transactions
 document.getElementById('transactions-list').addEventListener('click', (e) => {
     const editBtn = e.target.closest('.edit-btn');
     if (editBtn) {
         openTransactionModal(editBtn.dataset.id);
+        return; // Prevent triggering other listeners
+    }
+    const deleteBtn = e.target.closest('.delete-btn');
+    if (deleteBtn) {
+        deleteTransaction(deleteBtn.dataset.id);
     }
 });
 
@@ -408,6 +413,20 @@ document.querySelectorAll('.type-btn').forEach(btn => {
      // Auth modal has its own close handlers in HTML, this is for other modals
     document.querySelector('#auth-modal .close').onclick = closeAuthModal;
 
+    // --- NEW: Close modal on outside click ---
+    window.addEventListener('click', (e) => {
+        const transactionModal = document.getElementById('transaction-modal');
+        const accountModal = document.getElementById('account-modal');
+        const paymentModal = document.getElementById('payment-modal');
+        const authModal = document.getElementById('auth-modal');
+
+        if (e.target === transactionModal || e.target === accountModal || e.target === paymentModal) {
+            closeModals();
+        }
+        if (e.target === authModal) {
+            closeAuthModal();
+        }
+    });
 
     // Period selector in analytics
     document.querySelectorAll('.period-btn').forEach(btn => {
@@ -472,42 +491,56 @@ async function saveTransaction() {
     const accountId = document.getElementById('tx-account').value;
     const type = currentTransactionType;
 
-    if (id) { // --- UPDATE LOGIC ---
-        const originalTx = appData.transactions.find(t => t.id === id);
-        if (!originalTx) return;
+    if (id) { // --- REFACTORED UPDATE LOGIC ---
+    const txIndex = appData.transactions.findIndex(t => t.id === id);
+    if (txIndex === -1) return;
+    
+    const originalTx = appData.transactions[txIndex];
 
-        // 1. Revert original transaction's effect on balances
-        const oldFromAccount = getAccount(originalTx.accountId);
-        if (originalTx.type === 'expense') oldFromAccount.balance += originalTx.amount;
-        if (originalTx.type === 'income') oldFromAccount.balance -= originalTx.amount;
-        if (originalTx.type === 'transfer') {
-            const oldToAccount = getAccount(originalTx.toAccountId);
-            oldFromAccount.balance += originalTx.amount;
-            if (oldToAccount) oldToAccount.balance -= originalTx.amount;
-        }
+    // 1. Revert original transaction's effect on balances
+    const oldFromAccount = getAccount(originalTx.accountId);
+    if (originalTx.type === 'expense') {
+        if (oldFromAccount) oldFromAccount.balance += originalTx.amount;
+    } else if (originalTx.type === 'income') {
+        if (oldFromAccount) oldFromAccount.balance -= originalTx.amount;
+    } else if (originalTx.type === 'transfer') {
+        const oldToAccount = getAccount(originalTx.toAccountId);
+        if (oldFromAccount) oldFromAccount.balance += originalTx.amount;
+        if (oldToAccount) oldToAccount.balance -= originalTx.amount;
+    }
+    
+    // 2. Prepare new transaction data from form
+    const newTxData = {
+        id: id,
+        date: document.getElementById('tx-date').value,
+        type: type,
+        amount: amount,
+        accountId: accountId,
+        description: document.getElementById('tx-description').value,
+        recurring: document.getElementById('tx-recurring').value,
+        categoryId: null,
+        toAccountId: null
+    };
+    
+    // 3. Apply new transaction's effect on balances and set type-specific props
+    const newFromAccount = getAccount(newTxData.accountId);
+    if (newTxData.type === 'expense') {
+        if (newFromAccount) newFromAccount.balance -= newTxData.amount;
+        newTxData.categoryId = document.getElementById('tx-category').value;
+    } else if (newTxData.type === 'income') {
+        if (newFromAccount) newFromAccount.balance += newTxData.amount;
+        newTxData.categoryId = document.getElementById('tx-category').value;
+    } else if (newTxData.type === 'transfer') {
+        newTxData.toAccountId = document.getElementById('tx-to-account').value;
+        const newToAccount = getAccount(newTxData.toAccountId);
+        if (newFromAccount) newFromAccount.balance -= newTxData.amount;
+        if (newToAccount) newToAccount.balance += newTxData.amount;
+    }
 
-        // 2. Apply new transaction's effect on balances
-        const newFromAccount = getAccount(accountId);
-        if (type === 'expense') newFromAccount.balance -= amount;
-        if (type === 'income') newFromAccount.balance += amount;
-        if (type === 'transfer') {
-            const newToAccountId = document.getElementById('tx-to-account').value;
-            const newToAccount = getAccount(newToAccountId);
-            newFromAccount.balance -= amount;
-            if (newToAccount) newToAccount.balance += amount;
-            originalTx.toAccountId = newToAccountId;
-        }
+    // 4. Replace the old transaction object with the new one
+    appData.transactions[txIndex] = newTxData;
 
-        // 3. Update transaction object itself
-        originalTx.date = document.getElementById('tx-date').value;
-        originalTx.type = type;
-        originalTx.amount = amount;
-        originalTx.accountId = accountId;
-        originalTx.description = document.getElementById('tx-description').value;
-        originalTx.recurring = document.getElementById('tx-recurring').value;
-        originalTx.categoryId = type !== 'transfer' ? document.getElementById('tx-category').value : null;
-
-    } else { // --- CREATE NEW LOGIC ---
+}else { // --- CREATE NEW LOGIC ---
         const transaction = {
             id: generateId(),
             date: document.getElementById('tx-date').value,
@@ -540,6 +573,38 @@ async function saveTransaction() {
     renderAccounts();
 }
 
+async function deleteTransaction(transactionId) {
+    if (!confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
+        return;
+    }
+
+    const txIndex = appData.transactions.findIndex(t => t.id === transactionId);
+    if (txIndex === -1) {
+        console.error("Transaction not found for deletion.");
+        return;
+    }
+
+    const tx = appData.transactions[txIndex];
+    const fromAccount = getAccount(tx.accountId);
+
+    // Revert balance changes based on transaction type
+    if (tx.type === 'expense') {
+        if (fromAccount) fromAccount.balance += tx.amount;
+    } else if (tx.type === 'income') {
+        if (fromAccount) fromAccount.balance -= tx.amount;
+    } else if (tx.type === 'transfer') {
+        const toAccount = getAccount(tx.toAccountId);
+        if (fromAccount) fromAccount.balance += tx.amount;
+        if (toAccount) toAccount.balance -= tx.amount;
+    }
+
+    // Remove the transaction from the array
+    appData.transactions.splice(txIndex, 1);
+
+    await saveData();
+    renderTransactions();
+    renderAccounts();
+}
 
 async function saveAccount() {
     const id = document.getElementById('acc-id').value;
@@ -765,45 +830,38 @@ function renderTransactions() {
         const dayGroup = document.createElement('div');
         dayGroup.className = 'day-group';
 
-        // Set the date header
         const dateObj = new Date(date);
-        const dayName = getDayName(dateObj);
-        const header = document.createElement('div');
-        header.className = 'day-header';
-        header.textContent = dayName;
-        dayGroup.appendChild(header);
-
-        // --- START: Added Logic ---
-        // Calculate totals for the day
-        let dailyIncome = 0;
-        let dailyExpense = 0;
-        grouped[date].forEach(tx => {
-            if (tx.type === 'income') dailyIncome += tx.amount;
-            if (tx.type === 'expense') dailyExpense += tx.amount;
-             if (tx.type === 'transfer') {
-        const toAccount = getAccount(tx.toAccountId);
-        const fromAccount = getAccount(tx.accountId);
-        // Count as expense if money moves from an included account to an excluded one
-        if (fromAccount && fromAccount.includeInTotal && toAccount && !toAccount.includeInTotal) {
-            dailyExpense += tx.amount;
+    const dayName = getDayName(dateObj);
+    
+    // --- MODIFIED: Calculate totals for the day ---
+    let dailyIncome = 0;
+    let dailyExpense = 0;
+    grouped[date].forEach(tx => {
+        if (tx.type === 'income') dailyIncome += tx.amount;
+        if (tx.type === 'expense') dailyExpense += tx.amount;
+         if (tx.type === 'transfer') {
+            const toAccount = getAccount(tx.toAccountId);
+            const fromAccount = getAccount(tx.accountId);
+            if (fromAccount && fromAccount.includeInTotal && toAccount && !toAccount.includeInTotal) {
+                dailyExpense += tx.amount;
+            }
+            if (toAccount && toAccount.includeInTotal && fromAccount && !fromAccount.includeInTotal) {
+                dailyIncome += tx.amount;
+            }
         }
-         // Count as income if money moves from an excluded account to an included one
-        if (toAccount && toAccount.includeInTotal && fromAccount && !fromAccount.includeInTotal) {
-            dailyIncome += tx.amount;
-        }
-    }
-        });
+    });
 
-        // Create and append the summary element
-        const summaryEl = document.createElement('div');
-        summaryEl.className = 'day-summary';
-        summaryEl.innerHTML = `
-            <span class="income">In: ${formatCurrency(dailyIncome)}</span>
-            <span class="expense">Out: ${formatCurrency(dailyExpense)}</span>
-            <span class="net">Net: ${formatCurrency(dailyIncome - dailyExpense)}</span>
-        `;
-        dayGroup.appendChild(summaryEl);
-        // --- END: Added Logic ---
+    // --- MODIFIED: Create the new header with totals on the right ---
+    const header = document.createElement('div');
+    header.className = 'day-header';
+    header.innerHTML = `
+        <span class="day-name">${dayName}</span>
+        <div class="day-totals">
+            ${dailyIncome > 0 ? `<span class="income">${formatCurrency(dailyIncome)}</span>` : ''}
+            ${dailyExpense > 0 ? `<span class="expense">-${formatCurrency(dailyExpense)}</span>` : ''}
+        </div>
+    `;
+    dayGroup.appendChild(header);
 
         // Append the individual transaction items
         grouped[date].forEach(tx => {
@@ -835,15 +893,21 @@ function createTransactionItem(tx) {
         categoryIcon = category?.icon || '';
     }
 
+    // --- MODIFIED: Added delete button and wrapper for actions ---
     item.innerHTML = `
         <div class="transaction-info">
             <div class="transaction-desc">${categoryIcon} ${desc}</div>
             <div class="transaction-meta">${meta}</div>
         </div>
         <div class="transaction-amount ${tx.type}">${tx.type === 'expense' ? '-' : ''}${formatCurrency(tx.amount)}</div>
-        <button class="edit-btn" data-id="${tx.id}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-        </button>
+        <div class="transaction-actions">
+            <button class="edit-btn" data-id="${tx.id}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </button>
+            <button class="delete-btn" data-id="${tx.id}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            </button>
+        </div>
     `;
     return item;
 }
