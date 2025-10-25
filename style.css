@@ -925,10 +925,11 @@ body {
     background: var(--color-primary);
     color: var(--color-btn-primary-text);
     border: none;
-    padding: var(--space-10) var(--space-20);
+    padding: var(--space-6) var(--space-10); /* Reduced padding */
     border-radius: var(--radius-base);
     cursor: pointer;
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg); /* Reduced from xl to lg */
+    line-height: 1; /* Improves vertical alignment */
     transition: background var(--duration-fast) var(--ease-standard);
 }
 
@@ -1226,7 +1227,7 @@ body {
 }
 
 .month-navigation h2 {
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-lg);
     font-weight: var(--font-weight-medium);
     color: var(--color-text-secondary);
 }
