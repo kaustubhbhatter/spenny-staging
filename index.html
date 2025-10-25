@@ -54,27 +54,27 @@
         <!-- New Combined Header -->
         <div class="transactions-header">
     <!-- MOVE THE SUMMARY TO THE TOP -->
-    <div class="monthly-summary">
-        <div class="summary-card income">
-            <span class="label">Income</span>
-            <span id="monthly-income" class="amount">₹0</span>
+        <div class="monthly-summary">
+            <div class="summary-card income">
+                <span class="label">Income</span>
+                <span id="monthly-income" class="amount">₹0</span>
+            </div>
+            <div class="summary-card expense">
+                <span class="label">Expense</span>
+                <span id="monthly-expense" class="amount">₹0</span>
+            </div>
+            <div class="summary-card net">
+                <span class="label">Net</span>
+                <span id="monthly-net" class="amount">₹0</span>
+            </div>
         </div>
-        <div class="summary-card expense">
-            <span class="label">Expense</span>
-            <span id="monthly-expense" class="amount">₹0</span>
-        </div>
-        <div class="summary-card net">
-            <span class="label">Net</span>
-            <span id="monthly-net" class="amount">₹0</span>
+        <!-- MONTH NAVIGATION IS NOW SECOND -->
+        <div class="month-navigation">
+            <button id="prev-month" class="nav-btn">←</button>
+            <h2 id="current-month">October 2024</h2>
+            <button id="next-month" class="nav-btn">→</button>
         </div>
     </div>
-    <!-- MONTH NAVIGATION IS NOW SECOND -->
-    <div class="month-navigation">
-        <button id="prev-month" class="nav-btn">←</button>
-        <h2 id="current-month">October 2024</h2>
-        <button id="next-month" class="nav-btn">→</button>
-    </div>
-</div>
         <!-- End of New Combined Header -->
 
         <div id="transactions-list"></div>
