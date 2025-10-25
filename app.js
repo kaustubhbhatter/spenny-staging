@@ -1,3 +1,4 @@
+// Firebase Configuration
   const firebaseConfig = {
     apiKey: "AIzaSyDS91-BSwWWMYRsY0bxqI7XiULihYGEC84",
     authDomain: "expense-tracker-staging-e1bc7.firebaseapp.com",
@@ -8,7 +9,6 @@
     measurementId: "G-NSZ8H1SZCH"
   };
 
-  
 // --- GLOBAL STATE ---
 // We declare Firebase services here but will initialize them later.
 let auth, db; 
@@ -1018,6 +1018,7 @@ Object.keys(groupedAccounts).forEach(type => {
             });
             const balancePayable = acc.balance - outstandingBalance;
 
+           // This part is inside the if (acc.type === 'Credit Card') block
             item.innerHTML = `
                 <div class="account-info"><h3>${acc.name}</h3></div>
                 <div class="credit-card-columns">
@@ -1030,14 +1031,19 @@ Object.keys(groupedAccounts).forEach(type => {
                         <span class="amount ${outstandingBalance < 0 ? 'negative' : 'positive'}">${formatCurrency(outstandingBalance)}</span>
                     </div>
                 </div>
-                ${balancePayable < 0 ? `<button class="pay-now-btn" data-card-id="${acc.id}" data-amount="${Math.abs(balancePayable)}">Pay</button>` : ''}
-                <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                <div class="account-actions">
+                    ${balancePayable < 0 ? `<button class="pay-now-btn" data-card-id="${acc.id}" data-amount="${Math.abs(balancePayable)}">Pay</button>` : ''}
+                    <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                </div>
             `;
         } else {
             item.innerHTML = `
                 <div class="account-info"><h3>${acc.name}</h3></div>
                 <div class="account-balance ${balanceClass}">${formatCurrency(acc.balance)}</div>
-                <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                <!-- This wrapper is the important change for consistency -->
+                <div class="account-actions">
+                    <button class="edit-btn" data-id="${acc.id}"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                </div>
             `;
         }
         itemsContainer.appendChild(item);
