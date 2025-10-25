@@ -959,8 +959,10 @@ body {
 /* Modify the .monthly-summary */
 .monthly-summary {
     display: flex; /* Change from grid to flex */
+    flex-direction: row;
     gap: var(--space-12);
     margin-bottom: 0; /* Remove margin as parent handles it */
+    flex-grow: 1; /* Allows it to take up available space */
 }
 
 /* Make summary cards smaller */
@@ -1079,7 +1081,7 @@ body {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
     padding: var(--space-16);
-    background: var(--color-surface);
+    background: rgba(var(--color-surface-rgb), 0.4);
 }
 
 /* --- MODIFIED: Day Header Styling --- */
@@ -1182,10 +1184,52 @@ body {
 }
 /* END: Add new styles */
 
+/* Find the .account-item selector and add position: relative */
+.account-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-12);
+    border-radius: var(--radius-base);
+    position: relative; /* This is crucial for positioning the actions */
+    transition: background-color var(--duration-fast) var(--ease-standard); /* Add transition for smoothness */
+}
+
+/* Style the actions container to be hidden and positioned on the right */
+.account-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    position: absolute; /* Position it within the .account-item */
+    right: var(--space-12);
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0; /* Hide by default */
+    visibility: hidden;
+    transition: opacity 150ms ease-in-out;
+}
+
+/* On hover, show the actions... */
+.account-item:hover .account-actions {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ...and hide the balance/details to make space */
+.account-item .account-balance, 
+.account-item .credit-card-columns {
+    transition: opacity 150ms ease-in-out; /* Add transition for fade effect */
+}
+
+.account-item:hover .account-balance,
+.account-item:hover .credit-card-columns {
+    opacity: 0;
+}
+
 .account-group-card {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    background: var(--color-surface);
+    background: rgba(var(--color-surface-rgb), 0.4);
     margin-bottom: var(--space-16);
 }
 
@@ -1471,7 +1515,7 @@ body {
 /* Show edit button on hover for accounts and categories */
 .account-item:hover .edit-btn,
 .category-tag:hover .edit-btn {
-    display: inline-flex;
+    display: flex;
 }
 
 /* 3. Checkbox Label Fix */
