@@ -1,14 +1,14 @@
-// Firebase Configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyAmgOL0tYT-18VcfVmZ2CK5_79XfRLLAzs",
-  authDomain: "my-expense-tracker-9d0f9.firebaseapp.com",
-  projectId: "my-expense-tracker-9d0f9",
-  storageBucket: "my-expense-tracker-9d0f9.firebasestorage.app",
-  messagingSenderId: "384865958037",
-  appId: "1:384865958037:web:0cfa22e56aaef3dfe9439c",
-  measurementId: "G-E526DX0EVW"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyDS91-BSwWWMYRsY0bxqI7XiULihYGEC84",
+    authDomain: "expense-tracker-staging-e1bc7.firebaseapp.com",
+    projectId: "expense-tracker-staging-e1bc7",
+    storageBucket: "expense-tracker-staging-e1bc7.firebasestorage.app",
+    messagingSenderId: "58147570048",
+    appId: "1:58147570048:web:ba1707ef2235d0f6fa8165",
+    measurementId: "G-NSZ8H1SZCH"
+  };
 
+  
 // --- GLOBAL STATE ---
 // We declare Firebase services here but will initialize them later.
 let auth, db; 
