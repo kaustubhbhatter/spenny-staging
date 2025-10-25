@@ -51,26 +51,29 @@
 
     <!-- Transactions Screen -->
     <div id="transactions-screen" class="screen active">
-        <div class="month-navigation">
-            <button id="prev-month" class="nav-btn">←</button>
-            <h2 id="current-month">October 2024</h2>
-            <button id="next-month" class="nav-btn">→</button>
+        <!-- New Combined Header -->
+        <div class="transactions-header">
+            <div class="month-navigation">
+                <button id="prev-month" class="nav-btn">←</button>
+                <h2 id="current-month">October 2024</h2>
+                <button id="next-month" class="nav-btn">→</button>
+            </div>
+            <div class="monthly-summary">
+                <div class="summary-card income">
+                    <span class="label">Income</span>
+                    <span id="monthly-income" class="amount">₹0</span>
+                </div>
+                <div class="summary-card expense">
+                    <span class="label">Expense</span>
+                    <span id="monthly-expense" class="amount">₹0</span>
+                </div>
+                <div class="summary-card net">
+                    <span class="label">Net</span>
+                    <span id="monthly-net" class="amount">₹0</span>
+                </div>
+            </div>
         </div>
-
-        <div class="monthly-summary">
-            <div class="summary-card income">
-                <span class="label">Income</span>
-                <span id="monthly-income" class="amount">₹0</span>
-            </div>
-            <div class="summary-card expense">
-                <span class="label">Expense</span>
-                <span id="monthly-expense" class="amount">₹0</span>
-            </div>
-            <div class="summary-card net">
-                <span class="label">Net</span>
-                <span id="monthly-net" class="amount">₹0</span>
-            </div>
-        </div>
+        <!-- End of New Combined Header -->
 
         <div id="transactions-list"></div>
 
@@ -175,16 +178,18 @@
                 <button type="button" class="type-btn" data-type="transfer">Transfer</button>
             </div>
 
-            <div class="form-group">
-                <label>Date</label>
-                <input type="date" id="tx-date" required>
-            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" id="tx-date" required>
+                </div>
 
-            <div class="form-group amount-group">
-                <label>Amount</label>
-                <div class="amount-input-wrapper">
-                    <input type="number" id="tx-amount" placeholder="0" required>
-                    <button type="button" id="recurring-icon" class="recurring-icon" title="Set Recurring">⟲</button>
+                <div class="form-group amount-group">
+                    <label>Amount</label>
+                    <div class="amount-input-wrapper">
+                        <input type="number" id="tx-amount" placeholder="0" required>
+                        <button type="button" id="recurring-icon" class="recurring-icon" title="Set Recurring">⟲</button>
+                    </div>
                 </div>
             </div>
 
@@ -216,7 +221,7 @@
 
             <div class="form-group">
                 <label>Description</label>
-                <textarea id="tx-description" rows="3"></textarea>
+                <textarea id="tx-description" rows="1"></textarea>
             </div>
 
             <div class="form-actions">
